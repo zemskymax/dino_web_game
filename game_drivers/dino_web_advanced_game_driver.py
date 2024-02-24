@@ -1,10 +1,7 @@
 import base64
 import numpy as np
 import cv2
-import os
 import time
-from io import BytesIO
-from PIL import Image
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -40,7 +37,7 @@ class DinoWebAdvancedGameDriver:
             print(e)
             # TODO. Raise an exception
 
-        WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "runner-canvas")))
+        WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.CLASS_NAME, "runner-canvas")))
                 
     ##-------------------------------------##
 

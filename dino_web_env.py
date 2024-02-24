@@ -3,15 +3,16 @@ import pyautogui
 # used to process frames
 import cv2
 import numpy as np
-
 # Used to visualize captured frames
 from matplotlib import pyplot as plt
 import time
 # Used for the environment 
 import gymnasium as gym
 from gymnasium import spaces
-from dino_web_simple_game_driver import DinoWebSimpleGameDriver
-from dino_web_advanced_game_driver import DinoWebAdvancedGameDriver
+from game_drivers.dino_web_base_game_driver import DinoGameDriver
+from game_drivers.dino_web_simple_game_driver import DinoWebSimpleGameDriver
+from game_drivers.dino_web_advanced_game_driver import DinoWebAdvancedGameDriver
+
 
 class DinoWebEnv(gym.Env):
     """Custom Environment for Dino - Chrome game, that follows gym interface."""
@@ -20,13 +21,13 @@ class DinoWebEnv(gym.Env):
 
     def __init__(self, driver=1):
         super().__init__()
-        # Setup spaces
+
         self.observation_space = spaces.Box(low=0, high=255, shape=(1,83,100), dtype=np.uint8)
         self.action_space = spaces.Discrete(3)
 
-        if driver == 1:
+        if driver == DinoGameDriver.BASIC:
             self.driver = DinoWebSimpleGameDriver()
-        elif driver == 2:
+        elif driver == DinoGameDriver.ADVANCED:
             self.driver = DinoWebAdvancedGameDriver()
     
     ##-------------------------------------##
@@ -65,9 +66,9 @@ class DinoWebEnv(gym.Env):
     
     def reset(self, seed=None, options=None):
         # Click anywhere in the chrome window to reset the game
-        time.sleep(0.5)
         pyautogui.click(x=150, y=150)
         pyautogui.press('space')
+        time.sleep(1)
 
         info = {}
 
@@ -83,7 +84,6 @@ class DinoWebEnv(gym.Env):
     def get_observation(self, visualize=False):
 
         return self.driver.get_game_state(visualize=visualize)
-        # return np.reshape(resized, (1, 83, 100))
         
     ##-------------------------------------##
 
@@ -97,17 +97,7 @@ if __name__ == "__main__":
     print("-START-")
     env = DinoWebEnv()
 
-    # print(env.action_space.sample())
-    # plt.imshow(cv2.cvtColor(env.get_observation()[0], cv2.COLOR_BGR2RGB))
-    # plt.show()
-
     env.get_game_score(True)
-    
-    # done, done_cap = env.get_game_over(True)
-    # print(done)
-
-    # env.render()
-    # env.reset()
 
     # for episode in range(10):
     #     obs = env.reset()
