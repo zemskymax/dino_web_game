@@ -7,11 +7,11 @@ from game_drivers.dino_web_base_game_driver import DinoGameDriver
 
 class DinoWebCallback(BaseCallback):
 
-    def __init__(self, check_freq, save_path, driver_type=DinoGameDriver.BASIC, verbose=1):
+    def __init__(self, check_freq, model_name, save_path, driver_type=DinoGameDriver.BASIC, verbose=1):
         super(DinoWebCallback, self).__init__(verbose)
         self.check_freq = check_freq
         self.save_path = save_path
-        self.model_name = 'best_model_' + driver_type.name.lower()
+        self.model_name = model_name + '_' + driver_type.name.lower()
     
     ##-------------------------------------##
 
