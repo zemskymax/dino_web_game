@@ -1,5 +1,5 @@
 # Import os for file path management
-import os 
+import os
 # Import Base Callback for saving models
 from stable_baselines3.common.callbacks import BaseCallback
 from game_drivers.dino_web_base_game_driver import DinoGameDriver
@@ -27,4 +27,3 @@ class DinoWebCallback(BaseCallback):
             self.model.save(model_path)
 
         return True
-

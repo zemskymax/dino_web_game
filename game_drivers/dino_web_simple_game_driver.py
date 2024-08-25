@@ -1,3 +1,6 @@
+# used to send commands
+import time
+import pyautogui
 # Used for optical character recognition
 import pytesseract
 import numpy as np
@@ -19,19 +22,19 @@ class DinoWebSimpleGameDriver:
         raw = np.array(self.cap.grab(self.game_location))[:, :, :3]
         gray = cv2.cvtColor(raw, cv2.COLOR_BGR2GRAY)
         resized = cv2.resize(gray, (100, 83))
-        
+
         # 300x500x3 - normal
         # 300x500 - gray
         # 83x100 - resized
         if visualize:
             plt.imshow(resized)
             plt.show()
-        
+
         return np.reshape(resized, (1, 83, 100))
-    
+
     ##-------------------------------------##
-    
-    def get_game_score(self, visualize=False):
+
+    def get_game_points(self, visualize=False):
         score_cap = np.array(self.cap.grab(self.score_location))[:, :, :3]
 
         if visualize:
@@ -58,13 +61,31 @@ class DinoWebSimpleGameDriver:
         res = pytesseract.image_to_string(done_cap, config='--oem 3 --psm 6', lang='eng').replace(" ", "")[:4]
         if res in done_strings:
             return True
-        
+
         return False
-    
+
     ##-------------------------------------##
 
     def close(self):
         plt.close('all')
+
+    ##-------------------------------------##
+
+    def press(self, action):
+        action_map = {
+            0: 'space',
+            1: 'down',
+            2: 'no_op'
+        }
+        pyautogui.press(action_map[action])
+
+    ##-------------------------------------##
+
+    def reset(self):
+        # Click anywhere in the chrome window to reset the game
+        pyautogui.click(x=150, y=150)
+        pyautogui.press('space')
+        time.sleep(0.5)
 
 
 if __name__ == "__main__":
@@ -72,6 +93,6 @@ if __name__ == "__main__":
     print("-START-")
 
     simple = DinoWebSimpleGameDriver()
-    simple.get_game_score(visualize=True)
-    
+    simple.get_game_points(visualize=True)
+
     print("-STOP-")

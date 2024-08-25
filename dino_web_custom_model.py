@@ -18,12 +18,7 @@ class CustomNetwork(nn.Module):
     :param last_layer_dim_vf: (int) number of units for the last layer of the value network
     """
 
-    def __init__(
-        self,
-        feature_dim: int,
-        last_layer_dim_pi: int = 64,
-        last_layer_dim_vf: int = 64,
-    ):
+    def __init__(self, feature_dim: int, last_layer_dim_pi: int = 64, last_layer_dim_vf: int = 64):
         super().__init__()
 
         # IMPORTANT:
@@ -39,9 +34,7 @@ class CustomNetwork(nn.Module):
             nn.Linear(128, 64), nn.Tanh()
         )
         # Value network
-        self.value_net = nn.Sequential(
-            nn.Linear(feature_dim, last_layer_dim_vf), nn.ReLU()
-        )
+        self.value_net = nn.Sequential(nn.Linear(feature_dim, last_layer_dim_vf), nn.ReLU())
 
     def forward(self, features: th.Tensor) -> Tuple[th.Tensor, th.Tensor]:
         """

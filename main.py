@@ -1,6 +1,7 @@
 import argparse
 import datetime
-import os 
+import glob
+import os
 import shutil
 import time
 
@@ -43,10 +44,10 @@ class ModelType(Enum):
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    
+
     parser.add_argument("-a", "--action", required=True,  type=ModelAction, choices=list(ModelAction), help='TODO')
+    parser.add_argument('-mn', '--model_name', required=True, type=str, default="unnamed", help='TODO')
     parser.add_argument('-mt', '--model_type', required=True, type=ModelType, choices=list(ModelType), help='TODO')
-    # parser.add_argument('-mn', '--model_name', required=False, type=str, default='no_name', help='TODO')
     parser.add_argument('-t', '--test', required=False, type=bool, default=False, help='TODO')
     parser.add_argument('-d', '--debug', required=False, type=bool, default=False, help='TODO')
     parser.add_argument('-s', '--save', required=False, type=bool, default=False, help='TODO')
@@ -59,16 +60,16 @@ def main():
     print("-BEGINNING-")
 
     utils.set_random_seed(seed=SEED, using_cuda=True)
-    print(utils.get_device("cuda"))
+    print("Active device: " + str(utils.get_device("cuda")))
 
-    model_name = str(args.model_type)
+    model_name = str(args.model_name)
     print("Model name: " + model_name)
 
     env = DinoWebEnv(driver=DinoGameDriver.ADVANCED)
     # env = DummyVecEnv([lambda: env])
     env = Monitor(env)
 
-    # env_checker.check_env(env)
+    env_checker.check_env(env)
 
     if args.action == ModelAction.create:
         print("--CREATE ACTION--")
@@ -78,10 +79,10 @@ def main():
             print("--CUSTOM MODEL--")
 
             model = PPO(CustomActorCriticCnnPolicy, env=env, tensorboard_log=logs_path, verbose=1, device="cuda")
-            # model = DQN(CustomActorCriticCnnPolicy, env=env, tensorboard_log=logs_path, verbose=1, buffer_size=700000, learning_starts=1000, device="cuda")
         elif args.model_type == ModelType.default:
             print("--DEFAULT MODEL--")
 
+            # TODO. switch to PPO
             model = DQN('CnnPolicy', env=env, tensorboard_log=logs_path, verbose=1, buffer_size=700000, learning_starts=1000, device="cuda")
         else:
             print(Fore.RED + "--INVALID MODEL--")
@@ -92,34 +93,29 @@ def main():
     elif args.action == ModelAction.load:
         print("--LOAD ACTION--")
 
-        load_path = MODEL_DIR + model_name
+        load_path = MODEL_DIR + model_name + "/"
+
         if os.path.exists(load_path) and not os.path.isfile(load_path):
-            models = os.listdir(load_path)
-            if len(models) >= 1:
-                last_saved_model_name = models[len(models) - 1]
-                last_saved_model_path = load_path + "/" + last_saved_model_name
+            all_models = os.listdir(load_path)
+            if len(all_models) >= 1:
+                all_saved_models_path = [os.path.join(load_path, basename) for basename in all_models]
+                last_saved_model_path = max(all_saved_models_path, key=os.path.getctime)
 
-                print("Loading {} model.".format(last_saved_model_path))
+                print(f"Loading {last_saved_model_path} model from the {load_path} folder.")
 
-                model = DQN.load(last_saved_model_path, env=env, tensorboard_log=LOG_DIR, device="cuda")
+                model = PPO.load(last_saved_model_path, env=env, tensorboard_log=LOG_DIR, device="cuda")
             else:
                 print(Fore.RED + "Loading has failed!")
                 exit()
     else:
         print(Fore.RED + "--INVALID ACTION--")
         exit()
-    
-    print(model.policy)
-
-    # exit()
 
     print("--TRAINING STARTED--")
     callback = DinoWebCallback(check_freq=1000, model_name=model_name, save_path=CHECKPOINT_DIR, driver_type=DinoGameDriver.ADVANCED)
 
     timeStart = time.time()
-
-    model.learn(total_timesteps=1000, callback=callback, reset_num_timesteps=False, progress_bar=True)
-
+    model.learn(total_timesteps=10000, callback=callback, reset_num_timesteps=False, progress_bar=True)
     timeEnd = time.time()
     print("--TRAINING STOPPED after {}--".format(str(timedelta(seconds=(timeEnd - timeStart)))))
 
@@ -127,6 +123,7 @@ def main():
         time.sleep(2)
 
         print("--TESTING STARTED--")
+        best_score = 0
         timeStart = time.time()
 
         for episode in range(5):
@@ -134,18 +131,21 @@ def main():
             done = False
             score = 0
 
-            while not done: 
+            while not done:
                 action, _states = model.predict(obs, deterministic=True)
-                obs, reward, done, truncated, info = env.step(int(action))
+                obs, reward, done, _truncated, info = env.step(int(action))
                 score += reward
                 time.sleep(0.01)
+
+            if int(info["game_points"]) > best_score:
+                best_score = int(info["game_points"])
 
             print('Total Reward for episode {} is {}'.format(episode + 1, score))
             time.sleep(2)
 
         timeEnd = time.time()
 
-        print("--TESTING STOPPED after {}--".format(str(timedelta(seconds=(timeEnd - timeStart)))))
+        print("--TESTING STOPPED after {}, best result: {}--".format(str(timedelta(seconds=(timeEnd - timeStart))), best_score))
 
     if args.debug:
         print("--DEBUG--")
@@ -159,8 +159,9 @@ def main():
             # get the newest model
             models_path.sort(key=os.path.getmtime)
             last_model = models_path[len(models_path) - 1]
-            # save the newest model 
+            # save the newest model
             os.makedirs(MODEL_DIR, exist_ok=True)
+            # TODO. place in folder according to the algorithm
             curr_time = datetime.datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
             file_name = MODEL_DIR + model_name + "/" + curr_time + ".zip"
             os.makedirs(os.path.dirname(file_name), exist_ok=True)

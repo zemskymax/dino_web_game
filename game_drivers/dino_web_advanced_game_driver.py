@@ -19,9 +19,6 @@ LEADING_TEXT = "data:image/png;base64,"
 
 class DinoWebAdvancedGameDriver:
     def __init__(self):
-        # chrome_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chromedriver")
-        # chrome_path: str = 'chromedriver'
-
         options = webdriver.ChromeOptions()
         # options.add_argument('--headless')
         options.add_argument("--mute-audio")
@@ -34,11 +31,13 @@ class DinoWebAdvancedGameDriver:
         try:
             self.driver.get('chrome://dino')
         except WebDriverException as e:
-            print(e)
-            # TODO. Raise an exception
+            try:
+                self.driver.find_element(By.XPATH,'//body[@class="neterror"]')
+            except:
+                print(f"Error due to the following exception: {e}!")
 
         WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.CLASS_NAME, "runner-canvas")))
-                
+
     ##-------------------------------------##
 
     def get_game_state(self, visualize=False):
@@ -64,7 +63,7 @@ class DinoWebAdvancedGameDriver:
     
     ##-------------------------------------##
     
-    def get_game_score(self, visualize=False):
+    def get_game_points(self, visualize=False):
         score = int(''.join(self.driver.execute_script("return Runner.instance_.distanceMeter.digits")))
 
         if visualize:
@@ -88,11 +87,27 @@ class DinoWebAdvancedGameDriver:
         plt.close('all')
         self.driver.close()
 
+    ##-------------------------------------##
+
+    def press(self, action):
+        if action == 0:
+            self.driver.find_element(By.TAG_NAME, "body").send_keys(Keys.SPACE)
+        elif action == 1:
+            self.driver.find_element(By.TAG_NAME, "body").send_keys(Keys.DOWN)
+        else:
+            print("invalid action")
+
+    ##-------------------------------------##
+
+    def reset(self):
+        self.driver.find_element(By.TAG_NAME, "body").send_keys(Keys.SPACE)
+        time.sleep(1)
+
 
 if __name__ == "__main__":
 
     print("-START-")
-    
+
     advanced = DinoWebAdvancedGameDriver()
 
     advanced.driver.find_element(By.TAG_NAME, "body").send_keys(Keys.SPACE)
